@@ -1,0 +1,45 @@
+# Visual Studio user/workspace files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio build output (all platforms/configurations)
+[Bb]in/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# C/C++ compiler and linker intermediate files
+*.obj
+*.pch
+*.pdb
+*.idb
+*.ipdb
+*.iobj
+*.ilk
+*.tlog/
+*.log
+*.lastbuildstate
+*.recipe
+
+# Built binaries and generated resources
+*.exe
+*.dll
+*.lib
+*.exp
+*.res
+
+# Visual Studio caches and local configuration
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.sdf
+*.cache
