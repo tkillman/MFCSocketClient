@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#include "ClientSocket.h"
 
 class CMFCSocketClientView : public CView
 {
@@ -26,6 +26,9 @@ protected:
 	virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
 	virtual void OnBeginPrinting(CDC* pDC, CPrintInfo* pInfo);
 	virtual void OnEndPrinting(CDC* pDC, CPrintInfo* pInfo);
+	virtual void OnInitialUpdate();
+
+	ClientSocket m_socket;
 
 // 구현입니다.
 public:

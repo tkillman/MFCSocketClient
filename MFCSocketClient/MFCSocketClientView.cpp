@@ -13,6 +13,7 @@
 #include "MFCSocketClientDoc.h"
 #include "MFCSocketClientView.h"
 
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -49,6 +50,17 @@ BOOL CMFCSocketClientView::PreCreateWindow(CREATESTRUCT& cs)
 	//  Window 클래스 또는 스타일을 수정합니다.
 
 	return CView::PreCreateWindow(cs);
+}
+
+void CMFCSocketClientView::OnInitialUpdate()
+{
+	CView::OnInitialUpdate();
+	if (!m_socket.Create()) 
+	{
+		TRACE(_T("소켓 생성 실패 : %d\n"), m_socket.GetLastError());
+		return;
+	}
+	m_socket.StartConnect(_T("127.0.0.1"), 9000);
 }
 
 // CMFCSocketClientView 그리기
@@ -123,6 +135,8 @@ CMFCSocketClientDoc* CMFCSocketClientView::GetDocument() const // 디버그되�
 	return (CMFCSocketClientDoc*)m_pDocument;
 }
 #endif //_DEBUG
+
+
 
 
 // CMFCSocketClientView 메시지 처리기

@@ -12,6 +12,7 @@
 #include "ChildFrm.h"
 #include "MFCSocketClientDoc.h"
 #include "MFCSocketClientView.h"
+#include "ClientSocket.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -76,6 +77,11 @@ BOOL CMFCSocketClientApp::InitInstance()
 
 	CWinAppEx::InitInstance();
 
+	if (!AfxSocketInit()) 
+	{
+		AfxMessageBox(_T("소켓 초기화에 실패했습니다"));
+		return FALSE;
+	}
 
 	// OLE 라이브러리를 초기화합니다.
 	if (!AfxOleInit())
