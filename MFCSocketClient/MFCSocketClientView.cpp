@@ -55,6 +55,9 @@ BOOL CMFCSocketClientView::PreCreateWindow(CREATESTRUCT& cs)
 void CMFCSocketClientView::OnInitialUpdate()
 {
 	CView::OnInitialUpdate();
+
+	m_socket.SetOutputView(this);
+
 	if (!m_socket.Create()) 
 	{
 		TRACE(_T("소켓 생성 실패 : %d\n"), m_socket.GetLastError());
@@ -65,14 +68,15 @@ void CMFCSocketClientView::OnInitialUpdate()
 
 // CMFCSocketClientView 그리기
 
-void CMFCSocketClientView::OnDraw(CDC* /*pDC*/)
+void CMFCSocketClientView::OnDraw(CDC* pDC)
 {
-	CMFCSocketClientDoc* pDoc = GetDocument();
-	ASSERT_VALID(pDoc);
-	if (!pDoc)
-		return;
+	int y = 20;
 
-	// TODO: 여기에 원시 데이터에 대한 그리기 코드를 추가합니다.
+	for (const CString& message : m_socketLogs)
+	{
+		pDC->TextOut(20, y, message);
+		y += 24;
+	}
 }
 
 
@@ -115,6 +119,17 @@ void CMFCSocketClientView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
 #endif
 }
 
+void CMFCSocketClientView::AppendSocketLog(const CString& message)
+{
+	m_socketLogs.push_back(message);
+
+	if (m_socketLogs.size() > 20)
+	{
+		m_socketLogs.erase(m_socketLogs.begin());
+	}
+
+	Invalidate(FALSE);
+}
 
 // CMFCSocketClientView 진단
 

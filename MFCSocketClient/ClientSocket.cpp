@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ClientSocket.h"
+#include "MFCSocketClientView.h"
 
 void ClientSocket::StartConnect(const CString& host, UINT port)
 {
@@ -12,20 +13,34 @@ void ClientSocket::StartConnect(const CString& host, UINT port)
 		{
 			// StartConnect를 두 번 요청하면 WSAEWOULDBLOCK 상태가 아니여서 해당 if로 진입
 			// WSAEALREADY 10037 이미 비동기 연결 요청이 진행중
-			TRACE(_T("Connect 실패 : %d\n"), error);
+			CString message;
+			message.Format(_T("Connect 실패 : %d\n"), error);
+			Report(message);
+			TRACE(message);
 		}
 	}
 }
 
 void ClientSocket::OnConnect(int nErrorCode) 
 {
-	TRACE(_T("OnConnect :%d\n"), nErrorCode);
+	CString message;
+	message.Format(_T("OnConnect 결과: %d"), nErrorCode);
+	Report(message);
 	
 	// WSAECONNREFUSED 서버가 연결을 거부함.
 	if (nErrorCode == 0) 
 	{
-		const char message[] = "hello\n";
-		Send(message, sizeof(message) - 1);
+		Report(_T("서버 연결 성공"));
+
+		//const char message[] = "hello\n";
+		const char* jwt =
+			"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2F1dGguZXhhbXBsZS5jb20iLCJhdWQiOiJzb2NrZXQtc2VydmljZSIsInN1YiI6InRlc3QtY2xpZW50LTAwMSIsImNjY29kZSI6IlNFT1VMMDEiLCJzaG9wX2NkIjoiU0hPUDEwMCIsInJvbGVzIjoiT1JERVJfUkVBRCxPUkRFUl9XUklURSIsImlhdCI6MTc5NDMyNjY5MywiZXhwIjoxNzk0MzI2NjkzfQ.K9caqIj3dWCqI7sF4sMFTv97dQzMamdJiOGO270MIEE";
+		
+		CStringA authMessage("AUTH|");
+		authMessage += jwt;
+		authMessage += "\n";
+
+		Send(authMessage.GetString(), authMessage.GetLength());
 	}
 }
 
@@ -33,7 +48,10 @@ void ClientSocket::OnReceive(int nErrorCode)
 {
 	if (nErrorCode != 0) 
 	{
-		TRACE(_T("OnReceive 오류 %d\n"), nErrorCode);
+		CString message;
+		message.Format(_T("OnReceive 오류 %d\n"), nErrorCode);
+		TRACE(message);
+		Report(message);
 		return;
 	}
 
@@ -45,8 +63,41 @@ void ClientSocket::OnReceive(int nErrorCode)
 
 		if (received > 0) 
 		{
-			CStringA text(buffer, received);
-			TRACE(_T("수신: %hs\n"), text.GetString());
+			int charCount = MultiByteToWideChar(
+				CP_UTF8,
+				0,
+				buffer,
+				received,
+				nullptr,
+				0
+			);
+
+			if (charCount == 0)
+			{
+				Report(_T("UTF-8 문자열 변환 실패"));
+				return;
+			}
+
+			CString receivedText;
+
+			LPWSTR output = receivedText.GetBuffer(charCount);
+
+			MultiByteToWideChar(
+				CP_UTF8,
+				0,
+				buffer,
+				received,
+				output,
+				charCount
+			);
+
+			receivedText.ReleaseBuffer(charCount);
+
+			CString message = _T("수신: ");
+			message += receivedText;
+
+			Report(message);
+
 			continue;
 		}
 
@@ -56,7 +107,10 @@ void ClientSocket::OnReceive(int nErrorCode)
 		// WSAENETDOWN 네트워크 시스템을 사용할 수 없는 상태입니다.
 		if (received == SOCKET_ERROR && GetLastError() != WSAEWOULDBLOCK) 
 		{
-			TRACE(_T("Receive 실패: %d\n"), GetLastError());
+			CString message;
+			message.Format(_T("Receive 실패: %d\n"), GetLastError());
+			TRACE(message);
+			Report(message);
 		}
 
 		return;
@@ -76,4 +130,17 @@ void ClientSocket::OnClose(int nErrorCode)
 
 	TRACE(_T("OnClose: %d\n"), nErrorCode);
 	Close();
+}
+
+void ClientSocket::SetOutputView(CMFCSocketClientView* pView)
+{
+	m_pView = pView;
+}
+
+void ClientSocket::Report(const CString& message)
+{
+	if (m_pView != nullptr)
+	{
+		m_pView->AppendSocketLog(message);
+	}
 }

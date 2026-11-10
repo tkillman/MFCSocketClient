@@ -4,6 +4,9 @@
 
 #pragma once
 #include "ClientSocket.h"
+#include <vector>
+
+class CMFCSocketClientDoc;
 
 class CMFCSocketClientView : public CView
 {
@@ -22,6 +25,8 @@ public:
 public:
 	virtual void OnDraw(CDC* pDC);  // 이 뷰를 그리기 위해 재정의되었습니다.
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+	void AppendSocketLog(const CString& message);
+
 protected:
 	virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
 	virtual void OnBeginPrinting(CDC* pDC, CPrintInfo* pInfo);
@@ -29,6 +34,7 @@ protected:
 	virtual void OnInitialUpdate();
 
 	ClientSocket m_socket;
+	std::vector<CString> m_socketLogs;
 
 // 구현입니다.
 public:
