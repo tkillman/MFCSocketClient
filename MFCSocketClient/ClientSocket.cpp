@@ -17,6 +17,8 @@ void ClientSocket::StartConnect(const CString& host, UINT port)
 			message.Format(_T("Connect 실패 : %d\n"), error);
 			Report(message);
 			TRACE(message);
+			Close();
+			NotifyDisconnected();
 		}
 	}
 }
@@ -30,6 +32,10 @@ void ClientSocket::OnConnect(int nErrorCode)
 	// WSAECONNREFUSED 서버가 연결을 거부함.
 	if (nErrorCode == 0) 
 	{
+		if (m_pView != nullptr)
+		{
+			m_pView->OnSocketConnected();
+		}
 		Report(_T("서버 연결 성공"));
 
 		//const char message[] = "hello\n";
@@ -41,7 +47,11 @@ void ClientSocket::OnConnect(int nErrorCode)
 		authMessage += "\n";
 
 		Send(authMessage.GetString(), authMessage.GetLength());
+		return;
 	}
+
+	Close();
+	NotifyDisconnected();
 }
 
 void ClientSocket::OnReceive(int nErrorCode) 
@@ -52,6 +62,8 @@ void ClientSocket::OnReceive(int nErrorCode)
 		message.Format(_T("OnReceive 오류 %d\n"), nErrorCode);
 		TRACE(message);
 		Report(message);
+		Close();
+		NotifyDisconnected();
 		return;
 	}
 
@@ -105,12 +117,22 @@ void ClientSocket::OnReceive(int nErrorCode)
 		// WSAENOTCONN 연결되지 않은 소켓에 수신을 시도했습니다.
 		// WSAESHUTDOWN 소켓 송수신이 종료된 상태입니다.
 		// WSAENETDOWN 네트워크 시스템을 사용할 수 없는 상태입니다.
+		if (received == 0)
+		{
+			Report(_T("서버가 연결을 종료했습니다."));
+			Close();
+			NotifyDisconnected();
+			return;
+		}
+
 		if (received == SOCKET_ERROR && GetLastError() != WSAEWOULDBLOCK) 
 		{
 			CString message;
 			message.Format(_T("Receive 실패: %d\n"), GetLastError());
 			TRACE(message);
 			Report(message);
+			Close();
+			NotifyDisconnected();
 		}
 
 		return;
@@ -130,11 +152,20 @@ void ClientSocket::OnClose(int nErrorCode)
 
 	TRACE(_T("OnClose: %d\n"), nErrorCode);
 	Close();
+	NotifyDisconnected();
 }
 
 void ClientSocket::SetOutputView(CMFCSocketClientView* pView)
 {
 	m_pView = pView;
+}
+
+void ClientSocket::NotifyDisconnected()
+{
+	if (m_pView != nullptr)
+	{
+		m_pView->RequestReconnect();
+	}
 }
 
 void ClientSocket::Report(const CString& message)

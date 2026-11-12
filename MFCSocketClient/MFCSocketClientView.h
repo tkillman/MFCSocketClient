@@ -26,6 +26,8 @@ public:
 	virtual void OnDraw(CDC* pDC);  // 이 뷰를 그리기 위해 재정의되었습니다.
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	void AppendSocketLog(const CString& message);
+	void RequestReconnect();
+	void OnSocketConnected();
 
 protected:
 	virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
@@ -35,6 +37,12 @@ protected:
 
 	ClientSocket m_socket;
 	std::vector<CString> m_socketLogs;
+	CString m_host = _T("127.0.0.1");
+	UINT m_port = 9000;
+	UINT m_retryCount = 0;
+	bool m_reconnectScheduled = false;
+
+	static constexpr UINT_PTR RECONNECT_TIMER_ID = 1;
 
 // 구현입니다.
 public:
@@ -51,6 +59,7 @@ protected:
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	DECLARE_MESSAGE_MAP()
 };
 

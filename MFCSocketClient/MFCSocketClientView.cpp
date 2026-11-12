@@ -30,6 +30,7 @@ BEGIN_MESSAGE_MAP(CMFCSocketClientView, CView)
 	ON_COMMAND(ID_FILE_PRINT_PREVIEW, &CMFCSocketClientView::OnFilePrintPreview)
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 // CMFCSocketClientView 생성/소멸
@@ -42,6 +43,8 @@ CMFCSocketClientView::CMFCSocketClientView() noexcept
 
 CMFCSocketClientView::~CMFCSocketClientView()
 {
+	KillTimer(RECONNECT_TIMER_ID);
+	m_socket.Close();
 }
 
 BOOL CMFCSocketClientView::PreCreateWindow(CREATESTRUCT& cs)
@@ -63,7 +66,63 @@ void CMFCSocketClientView::OnInitialUpdate()
 		TRACE(_T("소켓 생성 실패 : %d\n"), m_socket.GetLastError());
 		return;
 	}
-	m_socket.StartConnect(_T("127.0.0.1"), 9000);
+	m_socket.StartConnect(m_host, m_port);
+}
+
+void CMFCSocketClientView::RequestReconnect()
+{
+	if (m_reconnectScheduled)
+	{
+		return;
+	}
+
+	UINT delayMs = 1000;
+	for (UINT i = 0; i < m_retryCount && delayMs < 30000; ++i)
+	{
+		delayMs *= 2;
+	}
+	if (delayMs > 30000)
+	{
+		delayMs = 30000;
+	}
+
+	++m_retryCount;
+	m_reconnectScheduled = true;
+	SetTimer(RECONNECT_TIMER_ID, delayMs, nullptr);
+
+	CString message;
+	message.Format(_T("%u초 후 재연결을 시도합니다."), delayMs / 1000);
+	AppendSocketLog(message);
+}
+
+void CMFCSocketClientView::OnSocketConnected()
+{
+	m_retryCount = 0;
+}
+
+void CMFCSocketClientView::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == RECONNECT_TIMER_ID)
+	{
+		KillTimer(RECONNECT_TIMER_ID);
+		m_reconnectScheduled = false;
+
+		m_socket.Close();
+		if (!m_socket.Create())
+		{
+			CString message;
+			message.Format(_T("재연결용 소켓 생성 실패: %d"), m_socket.GetLastError());
+			AppendSocketLog(message);
+			RequestReconnect();
+			return;
+		}
+
+		AppendSocketLog(_T("서버 재연결을 시도합니다."));
+		m_socket.StartConnect(m_host, m_port);
+		return;
+	}
+
+	CView::OnTimer(nIDEvent);
 }
 
 // CMFCSocketClientView 그리기

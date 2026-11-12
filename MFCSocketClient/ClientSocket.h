@@ -15,6 +15,7 @@ protected:
 	void OnClose(int nErrorCode) override;
 
 private:
+	void NotifyDisconnected();
 	void Report(const CString& message);
 
 	CMFCSocketClientView* m_pView = nullptr;
